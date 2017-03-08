@@ -12,5 +12,14 @@ class SolveCase(unittest.TestCase):
         solved = n.solve(description="foo", side="center", type="animation")
         self.assertEqual(solved, name)
 
+    def test_defaults(self):
+        name = "foo_M_anim"
+        solved = n.solve(description="foo", type="animation")
+        self.assertEqual(solved, name)
+
+        name = "foo_M_ctrl"
+        solved = n.solve(description="foo")
+        self.assertEqual(solved, name)
+
 if __name__ == "__main__":
     unittest.main()
