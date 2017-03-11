@@ -1,21 +1,28 @@
 import string
 
+tokens = dict()
 rule = "{description}_{side}_{type}"
-tokens = {
-    "description": None,
-    "side": {
-        "left": "L",
-        "right": "R",
-        "middle": "M",
-        "_default": "M",
-    },
-    "type": {
-        "animation": "anim",
-        "control": "ctrl",
-        "joint": "jnt",
-        "_default": "ctrl",
-    },
-}
+
+
+def add_token(name, **kwds):
+    if len(kwds) == 0:
+        tokens[name] = None
+        return True
+    if kwds.get("default"):
+        kwds["_default"] = kwds["default"]
+        del kwds["default"]
+    tokens[name] = kwds
+    return True
+
+def flush_tokens():
+    tokens.clear()
+    return True
+
+def remove_token(name):
+    if tokens.get(name):
+        del tokens[name]
+        return True
+    return False
 
 
 def solve(*args, **kwds):
