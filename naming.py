@@ -1,36 +1,67 @@
 import string
 
-tokens = dict()
-rule = "{description}_{side}_{type}"
+_tokens = dict()
+_rules = {"_active": None}
+
+
+def add_rule(name, pattern, set_active=False):
+    if has_rule(name):
+        return False
+    _rules[name] = pattern
+    if set_active:
+        _rules["_active"] = name
+    return True
+
+def flush_rules():
+    _rules.clear()
+    _rules["_active"] = None
+    return True
+
+def remove_rule(name):
+    if has_rule(name):
+        del _rules[name]
+        return True
+    return False
+
+def has_rule(name):
+    return name in _rules.keys()
+
+def active_rule():
+    k = _rules["_active"]
+    return _rules.get(k)
 
 
 def add_token(name, **kwds):
     if len(kwds) == 0:
-        tokens[name] = None
+        _tokens[name] = None
         return True
     if kwds.get("default"):
         kwds["_default"] = kwds["default"]
         del kwds["default"]
-    tokens[name] = kwds
+    _tokens[name] = kwds
     return True
 
 def flush_tokens():
-    tokens.clear()
+    _tokens.clear()
     return True
 
 def remove_token(name):
-    if tokens.get(name):
-        del tokens[name]
+    if has_token(name):
+        del _tokens[name]
         return True
     return False
+
+def has_token(name):
+    return name in _tokens.keys()
 
 
 def solve(*args, **kwds):
     i = 0
     values = dict()
+    rule = active_rule()
     fields = [x[1] for x in string.Formatter().parse(rule)]
     for f in fields:
-        lookup = tokens[f]
+        lookup = _tokens[f]
         if lookup is None:  # required
             if kwds.get(f) is not None:
                 values[f] = kwds[f]
@@ -44,11 +75,12 @@ def solve(*args, **kwds):
 
 def parse(name):
     retval = dict()
+    rule = active_rule()
     fields = [x[1] for x in string.Formatter().parse(rule)]
     split_name = name.split("_")
     for i, f in enumerate(fields):
         value = split_name[i]
-        lookup = tokens[f]
+        lookup = _tokens[f]
         if lookup is None:  # required
             retval[f] = value
             continue

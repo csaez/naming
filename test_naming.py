@@ -4,12 +4,14 @@ import naming as n
 
 class SolveCase(unittest.TestCase):
     def setUp(self):
+        n.flush_tokens()
         n.add_token("description")
         n.add_token("side", left="L", right="R", middle="M", default="M")
         n.add_token("type", animation="anim", control="ctrl", joint="jnt", default="ctrl")
 
-    def tearDown(self):
-        n.flush_tokens()
+        n.flush_rules()
+        pattern = "{description}_{side}_{type}"
+        n.add_rule("test", pattern, set_active=True)
 
     def test_explicit(self):
         name = "foo_L_anim"
@@ -41,12 +43,14 @@ class SolveCase(unittest.TestCase):
 
 class ParseCase(unittest.TestCase):
     def setUp(self):
+        n.flush_tokens()
         n.add_token("description")
         n.add_token("side", left="L", right="R", middle="M", default="M")
         n.add_token("type", animation="anim", control="ctrl", joint="jnt", default="ctrl")
 
-    def tearDown(self):
-        n.flush_tokens()
+        n.flush_rules()
+        pattern = "{description}_{side}_{type}"
+        n.add_rule("test", pattern, set_active=True)
 
     def test_parsing(self):
         name = "foo_M_ctrl"
@@ -57,6 +61,9 @@ class ParseCase(unittest.TestCase):
 
 
 class TokenCase(unittest.TestCase):
+    def setUp(self):
+        n.flush_tokens()
+
     def test_add(self):
         result = n.add_token("description")
         self.assertTrue(result)
@@ -68,13 +75,66 @@ class TokenCase(unittest.TestCase):
         result = n.flush_tokens()
         self.assertTrue(result)
 
-    def remove_token(self):
+    def test_remove(self):
         n.add_token("test")
         result = n.remove_token("test")
         self.assertTrue(result)
 
         result = n.remove_token("test2")
         self.assertFalse(result)
+
+    def test_has(self):
+        name = "foo"
+        n.add_token(name)
+        r = n.has_token(name)
+        self.assertTrue(r)
+
+        n.remove_token(name)
+        r = n.has_token(name)
+        self.assertFalse(r)
+
+class RuleCase(unittest.TestCase):
+    def setUp(self):
+        n.flush_rules()
+
+    def test_add(self):
+        pattern = "{description}_{side}_{type}"
+        result = n.add_rule("test", pattern)
+        self.assertTrue(result)
+
+    def test_flush(self):
+        result = n.flush_rules()
+        self.assertTrue(result)
+
+    def test_remove(self):
+        pattern = "{description}_{side}_{type}"
+
+        n.add_rule("test", pattern)
+        result = n.remove_rule("test")
+        self.assertTrue(result)
+
+        result = n.remove_rule("test2")
+        self.assertFalse(result)
+
+    def test_has(self):
+        name = "foo"
+        pattern = "{description}_{side}_{type}"
+
+        n.add_rule(name, pattern)
+        r = n.has_rule(name)
+        self.assertTrue(r)
+
+        n.remove_rule(name)
+        r = n.has_rule(name)
+        self.assertFalse(r)
+
+    def test_active(self):
+        name = "foo"
+        pattern = "{description}_{side}_{type}"
+
+        n.add_rule(name, pattern, set_active=True)
+        r = n.active_rule()
+        self.assertEqual(r, pattern)
 
 
 if __name__ == "__main__":
