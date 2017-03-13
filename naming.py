@@ -4,12 +4,13 @@ _tokens = dict()
 _rules = {"_active": None}
 
 
-def add_rule(name, pattern, set_active=False):
+def add_rule(name, *fields):
     if has_rule(name):
         return False
+    pattern = "{{{}}}".format("}_{".join(fields))
     _rules[name] = pattern
-    if set_active:
-        _rules["_active"] = name
+    if active_rule() is None:
+        set_active_rule(name)
     return True
 
 def flush_rules():
@@ -29,6 +30,11 @@ def has_rule(name):
 def active_rule():
     k = _rules["_active"]
     return _rules.get(k)
+
+def set_active_rule(name):
+    if not has_rule(name):
+        return False
+    _rules["_active"] = name
 
 
 def add_token(name, **kwds):

@@ -10,8 +10,9 @@ class SolveCase(unittest.TestCase):
         n.add_token("type", animation="anim", control="ctrl", joint="jnt", default="ctrl")
 
         n.flush_rules()
-        pattern = "{description}_{side}_{type}"
-        n.add_rule("test", pattern, set_active=True)
+        n.add_rule("test1", "description", "side", "type")
+        n.add_rule("test2", "side", "description")
+        n.set_active_rule("test1")
 
     def test_explicit(self):
         name = "foo_L_anim"
@@ -19,6 +20,16 @@ class SolveCase(unittest.TestCase):
         self.assertEqual(solved, name)
 
         name = "foo_M_anim"
+        solved = n.solve(description="foo", side="middle", type="animation")
+        self.assertEqual(solved, name)
+
+        n.set_active_rule("test2")
+
+        name = "L_foo"
+        solved = n.solve(description="foo", side="left", type="animation")
+        self.assertEqual(solved, name)
+
+        name = "M_foo"
         solved = n.solve(description="foo", side="middle", type="animation")
         self.assertEqual(solved, name)
 
@@ -31,12 +42,31 @@ class SolveCase(unittest.TestCase):
         solved = n.solve(description="foo")
         self.assertEqual(solved, name)
 
+        n.set_active_rule("test2")
+
+        name = "M_foo"
+        solved = n.solve(description="foo", type="animation")
+        self.assertEqual(solved, name)
+
+        solved = n.solve(description="foo")
+        self.assertEqual(solved, name)
+
     def test_implicit(self):
         name = "foo_M_anim"
         solved = n.solve("foo", type="animation")
         self.assertEqual(solved, name)
 
         name = "foo_M_ctrl"
+        solved = n.solve("foo")
+        self.assertEqual(solved, name)
+
+        n.set_active_rule("test2")
+
+        name = "M_foo"
+        solved = n.solve("foo", type="animation")
+        self.assertEqual(solved, name)
+
+        name = "M_foo"
         solved = n.solve("foo")
         self.assertEqual(solved, name)
 
@@ -49,8 +79,9 @@ class ParseCase(unittest.TestCase):
         n.add_token("type", animation="anim", control="ctrl", joint="jnt", default="ctrl")
 
         n.flush_rules()
-        pattern = "{description}_{side}_{type}"
-        n.add_rule("test", pattern, set_active=True)
+        n.add_rule("test1", "description", "side", "type")
+        n.add_rule("test2", "side", "description")
+        n.set_active_rule("test1")
 
     def test_parsing(self):
         name = "foo_M_ctrl"
@@ -58,6 +89,15 @@ class ParseCase(unittest.TestCase):
         self.assertEqual(parsed["description"], "foo")
         self.assertEqual(parsed["side"], "middle")
         self.assertEqual(parsed["type"], "control")
+        self.assertEqual(len(parsed), 3)
+
+        n.set_active_rule("test2")
+
+        name = "M_foo"
+        parsed = n.parse(name)
+        self.assertEqual(parsed["description"], "foo")
+        self.assertEqual(parsed["side"], "middle")
+        self.assertEqual(len(parsed), 2)
 
 
 class TokenCase(unittest.TestCase):
@@ -98,8 +138,7 @@ class RuleCase(unittest.TestCase):
         n.flush_rules()
 
     def test_add(self):
-        pattern = "{description}_{side}_{type}"
-        result = n.add_rule("test", pattern)
+        result = n.add_rule("test", "description", "side", "type")
         self.assertTrue(result)
 
     def test_flush(self):
@@ -107,9 +146,7 @@ class RuleCase(unittest.TestCase):
         self.assertTrue(result)
 
     def test_remove(self):
-        pattern = "{description}_{side}_{type}"
-
-        n.add_rule("test", pattern)
+        n.add_rule("test", "description", "side", "type")
         result = n.remove_rule("test")
         self.assertTrue(result)
 
@@ -118,9 +155,7 @@ class RuleCase(unittest.TestCase):
 
     def test_has(self):
         name = "foo"
-        pattern = "{description}_{side}_{type}"
-
-        n.add_rule(name, pattern)
+        n.add_rule(name, "description", "side", "type")
         r = n.has_rule(name)
         self.assertTrue(r)
 
@@ -132,7 +167,7 @@ class RuleCase(unittest.TestCase):
         name = "foo"
         pattern = "{description}_{side}_{type}"
 
-        n.add_rule(name, pattern, set_active=True)
+        n.add_rule(name, "description", "side", "type")
         r = n.active_rule()
         self.assertEqual(r, pattern)
 
