@@ -4,6 +4,37 @@ _tokens = dict()
 _rules = {"_active": None}
 
 
+class Token(object):
+    def __init__(self, name):
+        super(Token, self).__init__()
+        self._name = name
+        self._default = None
+        self._items = dict()
+
+    def set_default(self, value):
+        self._default = value
+
+    def default(self):
+        if self._default is None and len(self._items):
+            self._default = self._items.values()[0]
+        return self._default
+
+    def add_item(self, name, value):
+        self._items[name] = value
+
+    def is_required(self):
+        return self.default() is None
+
+    def solve(self, name=None):
+        if name is None:
+            return self.default()
+        return self._items.get(name)
+
+    def parse(self, value):
+        for k, v in self._items.iteritems():
+            if v == value:
+                return k
+
 def add_rule(name, *fields):
     if has_rule(name):
         return False
@@ -35,17 +66,18 @@ def set_active_rule(name):
     if not has_rule(name):
         return False
     _rules["_active"] = name
+    return True
 
 
 def add_token(name, **kwds):
-    if len(kwds) == 0:
-        _tokens[name] = None
-        return True
-    if kwds.get("default"):
-        kwds["_default"] = kwds["default"]
-        del kwds["default"]
-    _tokens[name] = kwds
-    return True
+    token = Token(name)
+    for k, v in kwds.iteritems():
+        if k == "default":
+            token.set_default(v)
+            continue
+        token.add_item(k, v)
+    _tokens[name] = token
+    return token
 
 def flush_tokens():
     _tokens.clear()
@@ -67,15 +99,15 @@ def solve(*args, **kwds):
     rule = active_rule()
     fields = [x[1] for x in string.Formatter().parse(rule)]
     for f in fields:
-        lookup = _tokens[f]
-        if lookup is None:  # required
+        token = _tokens[f]
+        if token.is_required():
             if kwds.get(f) is not None:
                 values[f] = kwds[f]
                 continue
             values[f] = args[i]
             i += 1
             continue
-        values[f] = lookup[kwds.get(f, "_default")]
+        values[f] = token.solve(kwds.get(f))
     return rule.format(**values)
 
 
@@ -86,12 +118,9 @@ def parse(name):
     split_name = name.split("_")
     for i, f in enumerate(fields):
         value = split_name[i]
-        lookup = _tokens[f]
-        if lookup is None:  # required
+        token = _tokens[f]
+        if token.is_required():
             retval[f] = value
             continue
-        for k, v in lookup.iteritems():
-            if v == value and k != "_default":
-                retval[f] = k
-                continue
+        retval[f] = token.parse(value)
     return retval
