@@ -1,5 +1,3 @@
-import string
-
 _tokens = dict()
 _rules = {"_active": None}
 
@@ -35,11 +33,43 @@ class Token(object):
             if v == value:
                 return k
 
+
+class Rule(object):
+    def __init__(self, name):
+        super(Rule, self).__init__()
+        self._name = name
+        self._fields = list()
+
+    def fields(self):
+        return tuple(self._fields)
+
+    def add_fields(self, token_names):
+        self._fields.extend(token_names)
+        return True
+
+    def _pattern(self):
+        return "{{{}}}".format("}_{".join(self._fields))
+
+    def solve(self, **values):
+        return self._pattern().format(**values)
+
+    def parse(self, name):
+        retval = dict()
+        split_name = name.split("_")
+        for i, f in enumerate(self.fields()):
+            value = split_name[i]
+            token = _tokens[f]
+            if token.is_required():
+                retval[f] = value
+                continue
+            retval[f] = token.parse(value)
+        return retval
+
+
 def add_rule(name, *fields):
-    if has_rule(name):
-        return False
-    pattern = "{{{}}}".format("}_{".join(fields))
-    _rules[name] = pattern
+    rule = Rule(name)
+    rule.add_fields(fields)
+    _rules[name] = rule
     if active_rule() is None:
         set_active_rule(name)
     return True
@@ -97,8 +127,7 @@ def solve(*args, **kwds):
     i = 0
     values = dict()
     rule = active_rule()
-    fields = [x[1] for x in string.Formatter().parse(rule)]
-    for f in fields:
+    for f in rule.fields():
         token = _tokens[f]
         if token.is_required():
             if kwds.get(f) is not None:
@@ -108,19 +137,9 @@ def solve(*args, **kwds):
             i += 1
             continue
         values[f] = token.solve(kwds.get(f))
-    return rule.format(**values)
+    return rule.solve(**values)
 
 
 def parse(name):
-    retval = dict()
     rule = active_rule()
-    fields = [x[1] for x in string.Formatter().parse(rule)]
-    split_name = name.split("_")
-    for i, f in enumerate(fields):
-        value = split_name[i]
-        token = _tokens[f]
-        if token.is_required():
-            retval[f] = value
-            continue
-        retval[f] = token.parse(value)
-    return retval
+    return rule.parse(name)
