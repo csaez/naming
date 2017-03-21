@@ -170,5 +170,22 @@ class RuleCase(unittest.TestCase):
         self.assertIsNotNone(r)
 
 
+class SerializationCase(unittest.TestCase):
+    def test_tokens(self):
+        token1 = n.add_token("side", left="L", right="R", middle="M", default="M")
+        token2 = n.Token.from_data(token1.data())
+        self.assertEqual(token1.data(), token2.data())
+
+    def test_rules(self):
+        rule1 = n.add_rule("test", "description", "side", "type")
+        rule2 = n.Rule.from_data(rule1.data())
+        self.assertEqual(rule1.data(), rule2.data())
+
+    def test_validation(self):
+        token = n.add_token("side", left="L", right="R", middle="M", default="M")
+        rule = n.add_rule("test", "description", "side", "type")
+        self.assertIsNone(n.Rule.from_data(token.data()))
+        self.assertIsNone(n.Token.from_data(rule.data()))
+
 if __name__ == "__main__":
     unittest.main()

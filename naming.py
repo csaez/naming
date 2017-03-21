@@ -1,8 +1,30 @@
+import copy
+
 _tokens = dict()
 _rules = {"_active": None}
 
 
-class Token(object):
+class Serializable(object):
+    def data(self):
+        retval = copy.deepcopy(self.__dict__)
+        retval["_Serializable_classname"] = type(self).__name__
+        retval["_Serializable_version"] = "1.0"
+        return retval
+
+    @classmethod
+    def from_data(cls, data):
+        if data.get("_Serializable_classname") != cls.__name__:
+            return None
+        del data["_Serializable_classname"]
+        if data.get("_Serializable_version") is not None:
+            del data["_Serializable_version"]
+
+        this = cls(None)
+        this.__dict__.update(data)
+        return this
+
+
+class Token(Serializable):
     def __init__(self, name):
         super(Token, self).__init__()
         self._name = name
@@ -34,7 +56,7 @@ class Token(object):
                 return k
 
 
-class Rule(object):
+class Rule(Serializable):
     def __init__(self, name):
         super(Rule, self).__init__()
         self._name = name
@@ -72,7 +94,7 @@ def add_rule(name, *fields):
     _rules[name] = rule
     if active_rule() is None:
         set_active_rule(name)
-    return True
+    return rule
 
 def flush_rules():
     _rules.clear()
