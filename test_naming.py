@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 import naming as n
 
@@ -171,6 +172,10 @@ class RuleCase(unittest.TestCase):
 
 
 class SerializationCase(unittest.TestCase):
+    def setUp(self):
+        n.flush_rules()
+        n.flush_tokens()
+
     def test_tokens(self):
         token1 = n.add_token("side", left="L", right="R", middle="M", default="M")
         token2 = n.Token.from_data(token1.data())
@@ -186,6 +191,25 @@ class SerializationCase(unittest.TestCase):
         rule = n.add_rule("test", "description", "side", "type")
         self.assertIsNone(n.Rule.from_data(token.data()))
         self.assertIsNone(n.Token.from_data(rule.data()))
+
+    def test_save_load_rule(self):
+        n.add_rule("test", "description", "side", "type")
+        filepath = tempfile.mktemp()
+        n.save_rule("test", filepath)
+
+        n.flush_rules()
+        n.load_rule(filepath)
+        self.assertTrue(n.has_rule("test"))
+
+    def test_save_load_token(self):
+        n.add_token("test", left="L", right="R", middle="M", default="M")
+        filepath = tempfile.mktemp()
+        n.save_token("test", filepath)
+
+        n.flush_tokens()
+        n.load_token(filepath)
+        self.assertTrue(n.has_token("test"))
+
 
 if __name__ == "__main__":
     unittest.main()

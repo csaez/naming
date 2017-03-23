@@ -1,3 +1,5 @@
+import os
+import json
 import copy
 
 _tokens = dict()
@@ -31,6 +33,9 @@ class Token(Serializable):
         self._default = None
         self._items = dict()
 
+    def name(self):
+        return self._name
+
     def set_default(self, value):
         self._default = value
 
@@ -61,6 +66,9 @@ class Rule(Serializable):
         super(Rule, self).__init__()
         self._name = name
         self._fields = list()
+
+    def name(self):
+        return self._name
 
     def fields(self):
         return tuple(self._fields)
@@ -120,6 +128,29 @@ def set_active_rule(name):
     _rules["_active"] = name
     return True
 
+def get_rule(name):
+    return _rules.get(name)
+
+def save_rule(name, filepath):
+    rule = get_rule(name)
+    if not rule:
+        return False
+    with open(filepath, "w") as fp:
+        json.dump(rule.data(), fp)
+    return True
+
+def load_rule(filepath):
+    if not os.path.isfile(filepath):
+        return False
+    try:
+        with open(filepath) as fp:
+            data = json.load(fp)
+    except:
+        return False
+    rule = Rule.from_data(data)
+    _rules[rule.name()] = rule
+    return True
+
 
 def add_token(name, **kwds):
     token = Token(name)
@@ -143,6 +174,29 @@ def remove_token(name):
 
 def has_token(name):
     return name in _tokens.keys()
+
+def get_token(name):
+    return _tokens.get(name)
+
+def save_token(name, filepath):
+    token = get_token(name)
+    if not token:
+        return False
+    with open(filepath, "w") as fp:
+        json.dump(token.data(), fp)
+    return True
+
+def load_token(filepath):
+    if not os.path.isfile(filepath):
+        return False
+    try:
+        with open(filepath) as fp:
+            data = json.load(fp)
+    except:
+        return False
+    token = Token.from_data(data)
+    _tokens[token.name()] = token
+    return True
 
 
 def solve(*args, **kwds):
