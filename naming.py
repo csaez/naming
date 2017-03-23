@@ -2,6 +2,7 @@ import os
 import json
 import copy
 
+NAMING_REPO_ENV = "NAMING_REPO"
 _tokens = dict()
 _rules = {"_active": None}
 
@@ -219,3 +220,49 @@ def solve(*args, **kwds):
 def parse(name):
     rule = active_rule()
     return rule.parse(name)
+
+
+def get_repo():
+    env_repo = os.environ.get(NAMING_REPO_ENV)
+    local_repo = os.path.join(os.path.expanduser("~"), ".config", "naming")
+    return env_repo or local_repo
+
+def save_session(repo=None):
+    repo = repo or get_repo()
+    if not os.path.exists(repo):
+        os.mkdir(repo)
+    # tokens and rules
+    for name, token in _tokens.iteritems():
+        filepath = os.path.join(repo, name + ".token")
+        save_token(name, filepath)
+    for name, rule in _rules.iteritems():
+        if not isinstance(rule, Rule):
+            continue
+        filepath = os.path.join(repo, name + ".rule")
+        save_rule(name, filepath)
+    # extra configuration
+    active = active_rule()
+    config = {"set_active_rule": active.name() if active else None}
+    filepath = os.path.join(repo, "naming.conf")
+    with open(filepath, "w") as fp:
+        json.dump(config, fp)
+    return True
+
+def load_session(repo=None):
+    repo = repo or get_repo()
+    # tokens and rules
+    for dirpath, dirnames, filenames in os.walk(repo):
+        for filename in filenames:
+            filepath = os.path.join(dirpath, filename)
+            if filename.endswith(".token"):
+                load_token(filepath)
+            elif filename.endswith(".rule"):
+                load_rule(filepath)
+    # extra configuration
+    filepath = os.path.join(repo, "naming.conf")
+    if os.path.exists(filepath):
+        with open(filepath) as fp:
+            config = json.load(fp)
+        for k, v in config.iteritems():
+            globals()[k](v)
+    return True

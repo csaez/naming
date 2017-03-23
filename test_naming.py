@@ -210,6 +210,28 @@ class SerializationCase(unittest.TestCase):
         n.load_token(filepath)
         self.assertTrue(n.has_token("test"))
 
+    def test_save_load_session(self):
+        n.add_token("description")
+        n.add_token("side", left="L", right="R", middle="M", default="M")
+        n.add_token("type", animation="anim", control="ctrl", joint="jnt", default="ctrl")
+        n.add_rule("test1", "description", "side", "type")
+        n.add_rule("test2", "side", "description")
+        n.set_active_rule("test1")
+
+        repo = tempfile.mkdtemp()
+        n.save_session(repo)
+
+        n.flush_rules()
+        n.flush_tokens()
+
+        n.load_session(repo)
+        self.assertTrue(n.has_token("description"))
+        self.assertTrue(n.has_token("side"))
+        self.assertTrue(n.has_token("type"))
+        self.assertTrue(n.has_rule("test1"))
+        self.assertTrue(n.has_rule("test2"))
+        self.assertEqual(n.active_rule().name(), "test1")
+
 
 if __name__ == "__main__":
     unittest.main()
